@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#
+# sshrm - removes a line from an ssh known_hosts files
+#     using syntax returned by ssh when the server key 
+#     changes, namely filename:line-number
+#
+# e.g. $ sshrm /home/myusrname/.ssh/known_hosts:32
+# would remove line 32 from myusrname's known_hosts file
+
+export USAGE="USAGE: $0 filename:linenum\n e.g.: sshrm ~/.ssh/known_hosts:5"
+
+shopt -s extglob
+
+[ $# = 0 ] && 
+    { echo -e $USAGE 1>&2; exit 1; }
+
+file=${1%:*}
+line=${1#*:}
+tmp=${line/+([0-9])/x}
+
+[ "${line}" = x -o "${tmp}" != x ] &&
+    { echo -e "${line} is not a number\n$USAGE" 1>&2; exit 1; }
+
+[ -f "$file" ] || 
+    { echo -e "$file does not exist\n$USAGE" 1>&2; exit 1; }
+
+maxlines=$(wc -l<"$file")
+
+[ $maxlines -lt $line ] && 
+    { echo -e "$file has fewer than $line lines\n$USAGE" 1>&2; exit 1; }
+
+echo "removing line ${line} from ${file}"
+cp ${file} ${file}.tmp
+sed ${line}d "${file}.tmp" > "${file}"
